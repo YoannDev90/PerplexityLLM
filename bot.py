@@ -19,8 +19,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('discord_bot')
 
-OWNER_ID = 1123534156626939945
-
 def split_message(message, max_length=2000):
     parts = []
     current_part = ""
@@ -47,7 +45,7 @@ async def send_long_message(channel, message):
             await channel.send(f"Suite ({i+1}/{len(parts)}):\n{part}")
 
 async def send_error_to_owner(error_message):
-    owner = await bot.fetch_user(OWNER_ID)
+    owner = await bot.fetch_user(OWNER)
     if owner:
         await owner.send(f"Erreur détectée :\n```\n{error_message}\n```")
 
@@ -121,7 +119,7 @@ async def gen(interaction: discord.Interaction, prompt: str):
         await send_error_to_owner(error_message)
     
 try:
-    bot.run("TOKEN")
+    bot.run(TOKEN)
 except Exception as e:
     error_message = f"Erreur fatale lors du démarrage du bot : {e}\n{traceback.format_exc()}"
     logger.critical(error_message)
