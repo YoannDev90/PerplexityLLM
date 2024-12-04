@@ -14,18 +14,6 @@ class Perplexity:
         self.session: Session = Session()
         self.user_agent: dict = { "User-Agent": "Ask/2.9.1/2406 (iOS; iPhone; Version 17.1) isiOSOnMac/false", "X-Client-Name": "Perplexity-iOS", "X-App-ApiClient": "ios" }
         self.session.headers.update(self.user_agent)
-
-        if email and ".perplexity_session" in listdir():
-            self._recover_session(email)
-        else:
-            self._init_session_without_login()
-
-            if email:
-                self._login(email)
-
-        self.email: str = email
-        self.t: str = self._get_t()
-        self.sid: str = self._get_sid()
     
         self.n: int = 1
         self.base: int = 420
@@ -43,43 +31,13 @@ class Perplexity:
         while not (self.ws.sock and self.ws.sock.connected):
             sleep(0.01)
 
-    def _recover_session(self, email: str) -> None:
-        with open(".perplexity_session", "r") as f:
-            perplexity_session: dict = loads(f.read())
-
-        if email in perplexity_session:
-            self.session.cookies.update(perplexity_session[email])
-        else:
-            self._login(email, perplexity_session)
-    
-    def _login(self, email: str, ps: dict = None) -> None:
-        self.session.post(url="https://www.perplexity.ai/api/auth/signin-email", data={"email": email})
-
-        email_link: str = str(input("paste the link you received by email: "))
-        self.session.get(email_link)
-
-        if ps:
-            ps[email] = self.session.cookies.get_dict()
-        else:
-            ps = {email: self.session.cookies.get_dict()}
-
-        with open(".perplexity_session", "w") as f:
-            f.write(dumps(ps))
 
     def _init_session_without_login(self) -> None:
         self.session.get(url=f"https://www.perplexity.ai/search/{str(uuid4())}")
         self.session.headers.update(self.user_agent)
-    
-    def _auth_session(self) -> None:
-        self.session.get(url="https://www.perplexity.ai/api/auth/session")
 
     def _get_t(self) -> str:
         return format(getrandbits(32), "08x")
-
-    def _get_sid(self) -> str:
-        return loads(self.session.get(
-            url=f"https://www.perplexity.ai/socket.io/?EIO=4&transport=polling&t={self.t}"
-        ).text[1:])["sid"]
 
     def _ask_anonymous_user(self) -> bool:
         response = self.session.post(
