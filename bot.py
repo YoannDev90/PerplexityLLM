@@ -1,9 +1,13 @@
 import discord
+from discord import app_commands, File
+from discord.ext import commands, tasks
 from perplexity import Perplexity
 import json
 import logging
 import traceback
 import re
+from image_gen import generate_image
+from io import BytesIO
 
 perplexity = Perplexity()
 
@@ -98,7 +102,24 @@ async def on_error(event, *args, **kwargs):
     error_message = f"Erreur non gérée dans l'événement {event}:\n{traceback.format_exc()}"
     logger.error(error_message)
     await send_error_to_owner(error_message)
-
+    
+@bot.tree.command(name="gen", description="Générer une image à partir d'un prompt")
+async def gen(interaction: discord.Interaction, prompt: str):
+    await interaction.response.defer()
+    
+    try:
+        image_data = await generate_image(prompt)
+        if image_data:
+            file = File(BytesIO(image_data), filename="generated_image.png")
+            await interaction.followup.send(f"Image générée pour le prompt: {prompt}", file=file)
+        else:
+            await interaction.followup.send("Désolé, je n'ai pas pu générer l'image.")
+    except Exception as e:
+        error_message = f"Erreur lors de la génération de l'image : {e}\n{traceback.format_exc()}"
+        logger.error(error_message)
+        await interaction.followup.send("Une erreur s'est produite lors de la génération de l'image.")
+        await send_error_to_owner(error_message)
+    
 try:
     bot.run("TOKEN")
 except Exception as e:
